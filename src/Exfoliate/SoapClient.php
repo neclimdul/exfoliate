@@ -23,26 +23,26 @@ class SoapClient implements ClientInterface
     protected $options;
 
     /**
-     * @var Factory\SoapClientFactory
+     * @var \Exfoliate\Factory\FactoryInterface
      */
     protected $factory;
 
     /**
-     * @var \SoapClient
+     * @var \SoapClient|null
      */
     protected $client;
 
     /**
-     * @var mixed
+     * @var \SoapHeader|array|null
      */
     protected $headers;
 
     /**
      * @param string $url
      * @param array $options
-     * @param Factory\FactoryInterface $factory
+     * @param \Exfoliate\Factory\FactoryInterface|null $factory
      */
-    public function __construct($url, array $options = array(), FactoryInterface $factory = null)
+    public function __construct(string $url, array $options = array(), FactoryInterface $factory = null)
     {
         $this->url = $url;
         $this->options = $options;
@@ -50,56 +50,52 @@ class SoapClient implements ClientInterface
     }
 
     /**
-     * @param string $method
-     * @param mixed $data
-     * @param array $options
-     * @param null $inputHeaders
-     * @param null $outputHeaders
-     *
-     * @throws Exception\ClientException
-     * @return mixed
+     * {@inheritDoc}
      */
-    public function call($method, $data, $options = array(), $inputHeaders = null, &$outputHeaders = null)
+    public function call(string $method, array $args, array $options = array(), $inputHeaders = null, array &$outputHeaders = null)
     {
         if (!$this->client) {
             $this->initializeClient();
         }
 
         try {
-            return $this->client->__soapCall($method, $data, $options, $inputHeaders, $outputHeaders);
+            /** @psalm-suppress PossiblyNullReference */
+            return $this->client->__soapCall($method, $args, $options, $inputHeaders, $outputHeaders);
         } catch (\SoapFault $soapFault) {
             throw new ClientException(sprintf('Call to %s failed', $method), 0, $soapFault);
         }
     }
 
     /**
-     * @return null|string
+     * {@inheritDoc}
      */
-    public function getLastRequest()
+    public function getLastRequest(): ?string
     {
         return $this->client ? $this->client->__getLastRequest() : null;
     }
 
     /**
-     * @return null|string
+     * {@inheritDoc}
      */
-    public function getLastResponse()
+    public function getLastResponse(): ?string
     {
         return $this->client ? $this->client->__getLastResponse() : null;
     }
 
     /**
-     * @param mixed $headers
+     * {@inheritDoc}
      */
-    public function setHeaders($headers)
+    public function setHeaders($headers): void
     {
         $this->headers = $headers;
     }
 
     /**
-     * @throws Exception\ConnectionException
+     * Initialize a new client.
+     *
+     * @throws \Exfoliate\Exception\ConnectionException
      */
-    protected function initializeClient()
+    protected function initializeClient(): void
     {
         try {
             $this->client = $this->factory->create($this->url, $this->options);
